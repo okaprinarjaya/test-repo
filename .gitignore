@@ -1,0 +1,11 @@
+# Dependency directories
+node_modules/
+
+# Logs
+logs/*.log
+
+# IDE
+.idea/
+
+.env
+nohup.out
