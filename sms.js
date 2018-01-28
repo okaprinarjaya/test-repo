@@ -21,20 +21,20 @@ function handleInboundSms(request, response) {
     .then(function (smsLogId) {
       const votesInformation = sms.parseText(request.body.text);
       if (votesInformation) {
-        processVotes(smsLogId, votesInformation);
+        processVotes(smsLogId, votesInformation, request.body.msisdn);
       } else {
-        sms.reply('Format SMS salah.', 'ERR_INSITE_SMS');
+        sms.reply('Format SMS salah.', 'ERR_INSITE_SMS', request.body.msisdn);
         logger.error('Format SMS salah.');
       }
+      response.status(200).send('OK');
     })
     .catch(function (error) {
       logger.error(error.message);
+      response.status(200).send('OK');
     });
-
-  response.status(200).send('OK');
 }
 
-function processVotes(smsLogId, votesInformation) {
+function processVotes(smsLogId, votesInformation, destinationNumber) {
   sms.checkPassKey(votesInformation.passKey, votesInformation.sc)
     .then(function (results) {
 
@@ -52,34 +52,34 @@ function processVotes(smsLogId, votesInformation) {
 
                   sms.saveVotes(smsLogId, votesInformation)
                     .then(function () {
-                      sms.reply('Laporan suara berhasil diterima. Terimakasih.', 'OK_INSITE_SMS');
+                      sms.reply('Laporan suara berhasil diterima. Terimakasih.', 'OK_INSITE_SMS', destinationNumber);
                       logger.info('Laporan suara berhasil diterima. Terimakasih.');
                     })
                     .catch(function (error) {
-                      sms.reply(error.message, error.code);
+                      sms.reply(error.message, error.code, destinationNumber);
                       logger.error(error.message);
                     });
 
                 })
                 .catch(function (error) {
-                  sms.reply(error.message, error.code);
+                  sms.reply(error.message, error.code, destinationNumber);
                   logger.error(error.message);
                 });
             })
             .catch(function (error) {
-              sms.reply(error.message, error.code);
+              sms.reply(error.message, error.code, destinationNumber);
               logger.error(error.message);
             });
 
         })
         .catch(function (error) {
-          sms.reply(error.message, error.code);
+          sms.reply(error.message, error.code, destinationNumber);
           logger.error(error.message);
         });
 
     })
     .catch(function (error) {
-      sms.reply(error.message, error.code);
+      sms.reply(error.message, error.code, destinationNumber);
       logger.error(error.message);
     });
 }

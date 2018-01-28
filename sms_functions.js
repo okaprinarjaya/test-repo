@@ -1,5 +1,6 @@
 const dotenv = require('dotenv');
 const mysql = require('mysql');
+const Nexmo = require('nexmo');
 const SmsError = require('./commons/sms_error');
 
 dotenv.load();
@@ -10,6 +11,11 @@ const pool = mysql.createPool({
   user: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME
+});
+
+const nexmo = new Nexmo({
+  apiKey: process.env.NEXMO_API_KEY,
+  apiSecret: process.env.NEXMO_API_SECRET
 });
 
 function parseText(text) {
@@ -50,11 +56,13 @@ function checkPassKey(passKey, sc) {
         connection.release();
         if (error2) {
           reject(error2);
-        }
-        if (results.length > 0) {
-          resolve(results);
+
         } else {
-          reject(new SmsError('Passkey tidak valid.'));
+          if (results.length > 0) {
+            resolve(results);
+          } else {
+            reject(new SmsError('Passkey tidak valid.'));
+          }
         }
       });
     });
@@ -69,14 +77,16 @@ function checkAllowToSendVotesReport(electionId) {
         connection.release();
         if (error2) {
           reject(error2);
-        }
-        if (results.length > 0 && results[0].count > 0) {
-          resolve(true);
+
         } else {
-          reject(new SmsError('Election belum dibuka, tunggu sampai waktu yang sudah ditentukan.'));
+          if (results.length > 0 && results[0].count > 0) {
+            resolve(true);
+          } else {
+            reject(new SmsError('Election belum dibuka, tunggu sampai waktu yang sudah ditentukan.'));
+          }
         }
       });
-    })
+    });
   });
 }
 
@@ -88,15 +98,17 @@ function checkElectionTotalCandidates(electionId, totalCandidates) {
         connection.release();
         if (error) {
           reject(error);
-        }
-        if (results.length > 0 && results[0].count > 0) {
-          if (totalCandidates !== results[0].count) {
-            reject(new SmsError('Total jumlah kandidat salah'));
-          } else {
-            resolve(true);
-          }
+
         } else {
-          reject(new SmsError('Belum ada kandidat yang terdaftar pada database'));
+          if (results.length > 0 && results[0].count > 0) {
+            if (totalCandidates !== results[0].count) {
+              reject(new SmsError('Total jumlah kandidat salah'));
+            } else {
+              resolve(true);
+            }
+          } else {
+            reject(new SmsError('Belum ada kandidat yang terdaftar pada database'));
+          }
         }
       });
     });
@@ -143,12 +155,12 @@ function saveVotes(smsLogId, votesInformation) {
           const insertParams = [votesInformation.sc ? 'suara_masuk_spotcheck' : 'suara_masuk', records];
 
           connection.query(strQryInsert, insertParams, function (error2) {
+            connection.release();
             if (error2) {
               reject(error2);
             } else {
               resolve(true);
             }
-            connection.release();
           });
         }
       });
@@ -177,9 +189,12 @@ function saveToSmsLog(textType, reqBody) {
   });
 }
 
-function reply(text, messageCode) {
-  if (messageCode === 'ERR_INSITE_SMS' || messageCode === 'OK_INSITE_SMS') {
-    console.log('SEND SMS');
+function reply(text, messageCode, destinationNumber) {
+  const enableSms = process.env.ENABLE_SMS;
+  if (enableSms === 'Y') {
+    if (messageCode === 'ERR_INSITE_SMS' || messageCode === 'OK_INSITE_SMS') {
+      nexmo.message.sendSms('INSITE', destinationNumber, text);
+    }
   }
 }
 
