@@ -9,3 +9,4 @@ logs/*.log
 
 .env
 nohup.out
+package-lock.json
