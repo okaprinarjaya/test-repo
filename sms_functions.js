@@ -1,6 +1,7 @@
 const dotenv = require('dotenv');
 const mysql = require('mysql');
-const Nexmo = require('nexmo');
+const axios = require('axios');
+// const Nexmo = require('nexmo');
 const SmsError = require('./commons/sms_error');
 
 dotenv.load();
@@ -13,10 +14,10 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME
 });
 
-const nexmo = new Nexmo({
+/*const nexmo = new Nexmo({
   apiKey: process.env.NEXMO_API_KEY,
   apiSecret: process.env.NEXMO_API_SECRET
-});
+});*/
 
 function parseText(text) {
   const pattern = /^(SC)?\s?[0-9A-Za-z]{5} \d+ (\d+\s?)+$/gi;
@@ -193,7 +194,21 @@ function reply(text, messageCode, destinationNumber) {
   const enableSms = process.env.ENABLE_SMS;
   if (enableSms === 'Y') {
     if (messageCode === 'ERR_INSITE_SMS' || messageCode === 'OK_INSITE_SMS') {
-      nexmo.message.sendSms('INSITE', destinationNumber, text);
+      // nexmo.message.sendSms('INSITE', destinationNumber, text);
+      
+      var smsServerStr = 'https://103.16.199.187/masking/send.php';
+      smsServerStr += '?username=insite&password=InSiTe@2017';
+      smsServerStr += '&hp=' + destinationNumber;
+      smsServerStr += '&message=' + text;
+
+      axios
+        .get(smsServerStr)
+        .then(function (resp) {
+          console.log('Sending sms success', resp);
+        })
+        .catch(function (error) {
+          console.error(error);
+        });
     }
   }
 }
