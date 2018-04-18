@@ -13,17 +13,22 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use('/insite', router);
 
-app.listen(port);
-console.log('Listen on port ' + port);
+app.listen(port, function () {
+  console.log('Listen on port ' + port);
+});
 
 function handleInboundSms(request, response) {
+  // const destinationNumber = '6281392979952';
+  const destinationNumber = '628174128301';
+  // const destinationNumber = request.body.msisdn;
+
   sms.saveToSmsLog('inbox', request.body)
     .then(function (smsLogId) {
       const votesInformation = sms.parseText(request.body.text);
       if (votesInformation) {
-        processVotes(smsLogId, votesInformation, request.body.msisdn);
+        processVotes(smsLogId, votesInformation, destinationNumber);
       } else {
-        sms.reply('Format SMS salah.', 'ERR_INSITE_SMS', request.body.msisdn);
+        sms.reply('Format SMS salah.', 'ERR_INSITE_SMS', destinationNumber);
         logger.error('Format SMS salah.');
       }
       response.status(200).send('OK');
@@ -56,30 +61,25 @@ function processVotes(smsLogId, votesInformation, destinationNumber) {
                       logger.info('Laporan suara berhasil diterima. Terimakasih.');
                     })
                     .catch(function (error) {
-                      sms.reply(error.message, error.code, destinationNumber);
                       logger.error(error.message);
                     });
 
                 })
                 .catch(function (error) {
-                  sms.reply(error.message, error.code, destinationNumber);
                   logger.error(error.message);
                 });
             })
             .catch(function (error) {
-              sms.reply(error.message, error.code, destinationNumber);
               logger.error(error.message);
             });
 
         })
         .catch(function (error) {
-          sms.reply(error.message, error.code, destinationNumber);
           logger.error(error.message);
         });
 
     })
     .catch(function (error) {
-      sms.reply(error.message, error.code, destinationNumber);
       logger.error(error.message);
     });
 }
