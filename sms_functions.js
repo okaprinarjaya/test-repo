@@ -3,6 +3,7 @@ const mysql = require('mysql');
 const axios = require('axios');
 const Nexmo = require('nexmo');
 const SmsError = require('./commons/sms_error');
+const konst = require('./commons/constants');
 
 dotenv.load();
 
@@ -62,7 +63,7 @@ function checkPassKey(passKey, sc) {
           if (results.length > 0) {
             resolve(results);
           } else {
-            reject(new SmsError('Passkey tidak valid.'));
+            reject(new SmsError('Format atau paskey anda salah.'));
           }
         }
       });
@@ -83,7 +84,7 @@ function checkAllowToSendVotesReport(electionId) {
           if (results.length > 0 && results[0].count > 0) {
             resolve(true);
           } else {
-            reject(new SmsError('Election belum dibuka, tunggu sampai waktu yang sudah ditentukan.'));
+            reject(new SmsError('Election belum dibuka, tunggu sampai batas waktu yang sudah ditentukan.'));
           }
         }
       });
@@ -103,12 +104,12 @@ function checkElectionTotalCandidates(electionId, totalCandidates) {
         } else {
           if (results.length > 0 && results[0].count > 0) {
             if (totalCandidates !== results[0].count) {
-              reject(new SmsError('Total jumlah kandidat salah'));
+              reject(new SmsError('Total jumlah kandidat salah.'));
             } else {
               resolve(true);
             }
           } else {
-            reject(new SmsError('Belum ada kandidat yang terdaftar pada database'));
+            reject(new SmsError('Belum ada kandidat yang terdaftar pada database.'));
           }
         }
       });
@@ -123,7 +124,7 @@ function checkCandidatesTotalVotesDetail(votesInformation) {
     });
 
     if (totalVotesFromDetail !== votesInformation.totalVote) {
-      reject(new SmsError('Kesalahan: Suara calon dan total suara berbeda.'));
+      reject(new SmsError('Suara calon dan total suara berbeda.'));
     } else {
       resolve(true);
     }
@@ -193,7 +194,7 @@ function saveToSmsLog(textType, reqBody) {
 function reply(text, messageCode, destinationNumber) {
   const enableSms = process.env.ENABLE_SMS;
   if (enableSms === 'Y') {
-    if (messageCode === 'ERR_INSITE_SMS' || messageCode === 'OK_INSITE_SMS') {
+    if (messageCode === konst.ERR_INSITE_SMS || messageCode === konst.OK_INSITE_SMS) {
       nexmo.message.sendSms('INSITE', destinationNumber, text);
 
       /*var smsServerStr = 'https://103.16.199.187/masking/send.php';
