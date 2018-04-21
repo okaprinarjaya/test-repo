@@ -94,7 +94,7 @@ function checkAllowToSendVotesReport(electionId) {
 
 function checkElectionTotalCandidates(electionId, totalCandidates) {
   return new Promise(function (resolve, reject) {
-    const strQry = "SELECT COUNT(*) AS `count` FROM `paslon` WHERE `election_id` = ?";
+    const strQry = "SELECT COUNT(*) AS `total_data` FROM `paslon` WHERE `election_id` = ?";
     pool.getConnection(function (error, connection) {
       connection.query(strQry, [electionId], function (error, results) {
         connection.release();
@@ -102,8 +102,8 @@ function checkElectionTotalCandidates(electionId, totalCandidates) {
           reject(error);
 
         } else {
-          if (results.length > 0 && results[0].count > 0) {
-            if (totalCandidates !== results[0].count) {
+          if (results.length > 0 && results[0].total_data > 0) {
+            if (totalCandidates !== results[0].total_data) {
               reject(new SmsError('Total jumlah kandidat salah.'));
             } else {
               resolve(true);
@@ -132,38 +132,74 @@ function checkCandidatesTotalVotesDetail(votesInformation) {
 }
 
 function saveVotes(smsLogId, votesInformation) {
+  var totalData = 0;
+  checkIsSuaraMasukExists(votesInformation)
+    .then(function (total) {
+      totalData = total;
+    })
+    .catch(function (error) {
+      logger.error(error.message);
+    });
+
   return new Promise(function (resolve, reject) {
     pool.getConnection(function (error, connection) {
-      const strQry = "SELECT paslon.election_id, tps.id AS tps_id, paslon.id AS paslon_id, paslon.des FROM paslon " +
-        "JOIN tps ON paslon.election_id = tps.election_id " +
-        "WHERE ?? = ? " +
-        "ORDER BY paslon.nomor_urut ASC ";
+      checkIsSuaraMasukExists(votesInformation)
+        .then(function (totalCheck) {
+          const strQry = "SELECT paslon.election_id, tps.id AS tps_id, paslon.id AS paslon_id, paslon.des FROM paslon " +
+            "JOIN tps ON paslon.election_id = tps.election_id " +
+            "WHERE ?? = ? " +
+            "ORDER BY paslon.nomor_urut ASC ";
+
+          const selectParams = [votesInformation.sc ? 'tps.passkey_sc' : 'tps.passkey', votesInformation.passKey];
+
+          connection.query(strQry, selectParams, function (error, results) {
+            if (error) {
+              connection.release();
+              reject(error);
+
+            } else {
+              const records = [];
+              results.forEach(function (item, index) {
+                const votesCount = votesInformation.totalVoteDetailList[index];
+                const statusLock = totalCheck > 0 ? 'N' : 'Y';
+                records.push([item["tps_id"], smsLogId, item["paslon_id"], votesCount, statusLock]);
+              });
+
+              const strQryInsert = "INSERT INTO ?? (tps_id, sms_log_id, paslon_id, suara, status_locked) VALUES ?";
+              const insertParams = [votesInformation.sc ? 'suara_masuk_spotcheck' : 'suara_masuk', records];
+
+              connection.query(strQryInsert, insertParams, function (error2) {
+                connection.release();
+                if (error2) {
+                  reject(error2);
+                } else {
+                  resolve(true);
+                }
+              });
+            }
+          });
+        })
+        .catch(function (error2) {
+          logger.error(error2.message);
+        });
+    });
+  });
+}
+
+function checkIsSuaraMasukExists(votesInformation) {
+  return new Promise(function (resolve, reject) {
+    pool.getConnection(function (error, connection) {
+      const sqlStr = 'SELECT COUNT(*) AS `total_data` FROM `suara_masuk` sm ' +
+        'JOIN `tps` ON sm.tps_id = tps.id WHERE ?? = ?';
 
       const selectParams = [votesInformation.sc ? 'tps.passkey_sc' : 'tps.passkey', votesInformation.passKey];
 
-      connection.query(strQry, selectParams, function (error, results) {
-        if (error) {
-          connection.release();
-          reject(error);
-
+      connection.query(sqlStr, selectParams, function (error2, results) {
+        connection.release();
+        if (error2) {
+          reject(error2);
         } else {
-          const records = [];
-          results.forEach(function (item, index) {
-            const votesCount = votesInformation.totalVoteDetailList[index];
-            records.push([item["tps_id"], smsLogId, item["paslon_id"], votesCount]);
-          });
-
-          const strQryInsert = "INSERT INTO ?? (tps_id, sms_log_id, paslon_id, suara) VALUES ?";
-          const insertParams = [votesInformation.sc ? 'suara_masuk_spotcheck' : 'suara_masuk', records];
-
-          connection.query(strQryInsert, insertParams, function (error2) {
-            connection.release();
-            if (error2) {
-              reject(error2);
-            } else {
-              resolve(true);
-            }
-          });
+          resolve(results[0].total_data);
         }
       });
     });
