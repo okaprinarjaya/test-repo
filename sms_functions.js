@@ -1,3 +1,4 @@
+const path = require('path');
 const dotenv = require('dotenv');
 const mysql = require('mysql');
 const axios = require('axios');
@@ -5,7 +6,7 @@ const Nexmo = require('nexmo');
 const SmsError = require('./commons/sms_error');
 const konst = require('./commons/constants');
 
-dotenv.load();
+dotenv.config({ path: path.dirname(require.main.filename) + '/.env' });
 
 const pool = mysql.createPool({
   connectionLimit: 10,

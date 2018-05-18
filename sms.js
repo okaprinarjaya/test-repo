@@ -20,8 +20,8 @@ app.listen(port, function () {
 
 function handleInboundSms(request, response) {
   // const destinationNumber = '6281392979952';
-  const destinationNumber = '628174128301';
-  // const destinationNumber = request.body.msisdn;
+  // const destinationNumber = '628174128301';
+  const destinationNumber = request.body.msisdn;
 
   sms.saveToSmsLog('inbox', request.body)
     .then(function (smsLogId) {
