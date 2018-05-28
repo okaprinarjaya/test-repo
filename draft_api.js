@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const express = require('express');
 const bodyParser = require('body-parser');
 const mysql = require('mysql');
+const fs = require('fs');
 
 dotenv.config({ path: path.dirname(require.main.filename) + '/.env' });
 
@@ -110,7 +111,7 @@ app.post('/suara-masuk-draft', (req, resp) => {
                       ]);
                     }
 
-                    // Do the insert!
+                    // Do the questionaires insert!
                     conn.query(strQryInsert, [records], (errInsert, resultsInsert) =>  {
 
                       // Inquiry TMP Suara Masuk NEW
@@ -139,17 +140,31 @@ app.post('/suara-masuk-draft', (req, resp) => {
                         }
 
                         // Save image
-                        if (foto !== '') {
+                        /*if (foto !== '') {
+                          const base64Data = foto.replace(/^data:image\/jpg;base64,/, "");
+                          const out = process.env.SAVE_PHOTO_PATH + kelurahan_id + '/';
 
-                        }
-                      })
+                          fs.stat(out, (errStat, stats) => {
+                            if (errStat && errStat.code === 'ENOENT') {
+                              console.log('Save image - check directory existence - errStat', errStat);
+                              fs.mkdir(out, errMkdir => {
+                                if (!errMkdir) {
+                                  fs.writeFile(out + responden_id + '.jpg', base64Data, 'base64', _ => _);
+                                }
+                              });
+
+                            } else {
+                              fs.writeFile(out + responden_id + '.jpg', base64Data, 'base64', _ => _);
+                            }
+                          });
+                        }*/
+                      });
                     });
 
                   } else {
                     // Update Status Relawan
-                    //
+                    conn.query("UPDATE relawan SET status = ? WHERE id = ?", ['TIDAK AKTIF', relawan_id], _ => _);
                   }
-
                 }
               }); // -> 5
             }); // -> 4
@@ -159,6 +174,9 @@ app.post('/suara-masuk-draft', (req, resp) => {
     }
 
     conn.release();
+
+    // Construct ouput / response
+    //
     resp.json({ hola: 'Holaaa hola hola holaaaaa' });
   });
 });
