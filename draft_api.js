@@ -68,13 +68,89 @@ app.post('/suara-masuk-draft', (req, resp) => {
                 "AND deleted = 'false'";
 
               conn.query(strQry5, [relawan_id, kelurahan_id], (err5, resultsQry5) => {
-                console.log('resultsQry3', resultsQry3);
-                console.log('resultsQry1', resultsQry1);
-                console.log('resultsQry5', resultsQry5);
-                console.log('resultsQry2', resultsQry2);
-                // if (resultsQry3 && resultsQry1 && resultsQry5 && resultsQry2) {
-                  //
-                // }
+                if (!err3 && !err1 && !err5 && !err2) {
+
+                  // Prepare inserts
+                  if (
+                    resultsQry3[0]['kuota_kk'] > resultsQry1[0]['total'] &&
+                    resultsQry5[0]['jumlah_kk'] > resultsQry2[0]['total']
+                  ) {
+                    const strQryInsert = "INSERT INTO suara_masuk (" +
+                      "sesi_dtdc_id, " +
+                      "questions_id, " +
+                      "options_id, " +
+                      "option_other, " +
+                      "relawan_id, " +
+                      "kab_kota_id, " +
+                      "kecamatan_id, " +
+                      "kelurahan_id, " +
+                      "kode_responden, " +
+                      "status, " +
+                      "ent_by, " +
+                      "ent_dt, " +
+                      "deleted" +
+                      ") VALUES ?";
+
+                    const records = [];
+                    for (let p = 0; p < kuisioner.length; p++) {
+                      records.push([
+                        sesi_dtdc_id,
+                        kuisioner[p]['kuisioner_id'],
+                        kuisioner[p]['pilihan_jawaban_id'],
+                        kuisioner[p]['pilihan_jawaban_lain'],
+                        relawan_id,
+                        resultsQry4[0]['kab_kota_id'],
+                        resultsQry4[0]['kecamatan_id'],
+                        kelurahan_id,
+                        responden_id,
+                        '1',
+                        relawan_id,
+                        kuisioner[p]['created_dt'],
+                        'false'
+                      ]);
+                    }
+
+                    // Do the insert!
+                    conn.query(strQryInsert, [records], (errInsert, resultsInsert) =>  {
+
+                      // Inquiry TMP Suara Masuk NEW
+                      const strQry6 = "SELECT COALESCE(SUM(total_suara),0) AS total FROM tmp_suara_masuk " +
+                        "WHERE relawan_id = ? " +
+                        "deleted = 'false'";
+
+                      conn.query(strQry6, [relawan_id], (err6, resultsQry6) => {
+                        if (resultsQry3[0]['kuota_kk'] === resultsQry6[0]['total']) {
+                          const strQryUpdt = "UPDATE relawan SET status = ? WHERE id = ?";
+                          conn.query(strQryUpdt, ['TIDAK AKTIF', relawan_id], _ => _);
+                        }
+
+                        // Populate responden_info
+                        if (kuisioner.length > 0) {
+                          const values = {
+                            kode_responden: responden_id,
+                            latitute: latitute,
+                            longitute: longitute,
+                            address: '-',
+                            ent_by: relawan_id,
+                            ent_dt: { toSqlString: () => 'CURRENT_TIMESTAMP()' }
+                          };
+
+                          conn.query("INSERT INTO responden_info SET ?", values, _ => _);
+                        }
+
+                        // Save image
+                        if (foto !== '') {
+
+                        }
+                      })
+                    });
+
+                  } else {
+                    // Update Status Relawan
+                    //
+                  }
+
+                }
               }); // -> 5
             }); // -> 4
           }); // -> 3
