@@ -35,32 +35,55 @@ app.post('/suara-masuk-draft', (req, resp) => {
       const longitute = item['longitute'];
       const foto = item['foto'];
 
+      // 1. Inquiry TMP Suara masuk
       const strQry1 = "SELECT COALESCE(SUM(total_suara),0) AS total " +
         "FROM tmp_suara_masuk " +
         "WHERE `relawan_id` = ? " +
         "AND deleted = 'false'";
 
-      const strQry2 = "SELECT COALESCE(SUM(total_suara),0) AS total " +
-        "FROM tmp_suara_masuk " +
-        "WHERE relawan_id = ? " +
-        "AND kelurahan_id = ?";
-
       conn.query(strQry1, [relawan_id], (err1, resultsQry1) => {
-        console.log('resultsQry1', resultsQry1);
+
+        // 2. Inquiry TMP Suara masuk per Kelurahan
+        const strQry2 = "SELECT COALESCE(SUM(total_suara),0) AS total " +
+          "FROM tmp_suara_masuk " +
+          "WHERE relawan_id = ? " +
+          "AND kelurahan_id = ?";
 
         conn.query(strQry2, [relawan_id, kelurahan_id], (err2, resultsQry2) => {
-          console.log('resultsQry2', resultsQry2);
-          console.log('resultsQry1 bisa dipanggil disini', resultsQry1);
 
-          // Query 3 here
-          // --
-        });
-      });
+          // 3. Inquiry data relawan
+          const strQry3 = "SELECT kuota_kk FROM relawan WHERE id = ?";
 
-      resp.json({ hola: 'Holaaa hola hola holaaaaa' });
+          conn.query(strQry3, [relawan_id], (err3, resultsQry3) => {
+
+            // 4. Inquiry kelurahan get kab_kota_id & kecamatan_id
+            const strQry4 = "SELECT kab_kota_id, kecamatan_id FROM kelurahan WHERE id = ?";
+
+            conn.query(strQry4, [kelurahan_id], (err4, resultsQry4) => {
+
+              // 5. Inquiry relawan wilayah
+              const strQry5 = "SELECT jumlah_kk FROM tmp_suara_masuk " +
+                "WHERE relawan_id = ? " +
+                "AND kelurahan_id = ? " +
+                "AND deleted = 'false'";
+
+              conn.query(strQry5, [relawan_id, kelurahan_id], (err5, resultsQry5) => {
+                console.log('resultsQry3', resultsQry3);
+                console.log('resultsQry1', resultsQry1);
+                console.log('resultsQry5', resultsQry5);
+                console.log('resultsQry2', resultsQry2);
+                // if (resultsQry3 && resultsQry1 && resultsQry5 && resultsQry2) {
+                  //
+                // }
+              }); // -> 5
+            }); // -> 4
+          }); // -> 3
+        }); // -> 2
+      }); // -> 1
     }
 
     conn.release();
+    resp.json({ hola: 'Holaaa hola hola holaaaaa' });
   });
 });
 
