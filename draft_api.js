@@ -1,16 +1,15 @@
 const cluster = require('cluster');
-const numCPUs = require('os').cpus().length;
 
 if (cluster.isMaster) {
-  console.log(`Master ${process.pid} is running`);
-
-  for (let i = 0; i < numCPUs; i++) {
+  for (let i = 0; i < 2; i++) {
     cluster.fork();
   }
 
   cluster.on('exit', (worker, code, signal) => {
-    console.log(`worker ${worker.process.pid} die`);
+    console.log(`worker ${worker.process.pid} died`);
   });
+
+  console.log(`Master ${process.pid} is running`);
 
 } else {
   const path = require('path');
@@ -188,10 +187,10 @@ if (cluster.isMaster) {
         }); // -> 1
       }
 
-      conn.release();
-
       // Construct ouput / response
       //
+
+      conn.release();
       resp.json({ hola: 'Holaaa hola hola holaaaaa' });
     });
   });
