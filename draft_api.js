@@ -108,9 +108,13 @@ if (cluster.isMaster) {
                           deleted: 'false'
                         };
 
-                        conn.query("INSERT INTO suara_masuk SET ?", values, (errInsert, resultsInsert) => {
-                          console.log('errInsert', errInsert);
-                        });
+                        try {
+                          conn.query("INSERT INTO suara_masuk SET ?", values, (errInsert, resultsInsert) => {
+                            console.log('errInsert', errInsert.code);
+                          });
+                        } catch (errr) {
+                          console.log(err.code);
+                        }
                       }
 
                       // Inquiry TMP Suara Masuk NEW
