@@ -8,10 +8,10 @@ const fs = require('fs');
 dotenv.config({ path: path.dirname(require.main.filename) + '/.env' });
 
 const app = express();
-const port = 8181;
+const port = 8080;
 
 const pool = mysql.createPool({
-  connectionLimit: 300,
+  connectionLimit: 30,
   host: process.env.DB_HOST,
   user: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
@@ -117,7 +117,7 @@ app.post('/suara-masuk-draft', (req, resp) => {
                       // Inquiry TMP Suara Masuk NEW
                       const strQry6 = "SELECT COALESCE(SUM(total_suara),0) AS total FROM tmp_suara_masuk " +
                         "WHERE relawan_id = ? " +
-                        "deleted = 'false'";
+                        "AND deleted = 'false'";
 
                       conn.query(strQry6, [relawan_id], (err6, resultsQry6) => {
                         if (resultsQry3[0]['kuota_kk'] === resultsQry6[0]['total']) {
