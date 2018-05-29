@@ -260,10 +260,26 @@ if (cluster.isMaster) {
       }
 
       // Construct ouput / response
-      //
+      const responseList = [];
+      for (let x = 0; x < rows.length; x++) {
+        const item = rows[x];
+        const responden_id = item['responden_id'];
+
+        const strQry7 = "SELECT COUNT(1) AS jumlah FROM responden_info WHERE kode_responden = ?";
+        conn.query(strQry7, [responden_id], (errQry7, resultsQry7) => {
+          const listItem = { responden_id: responden_id };
+          if (resultsQry7[0]['jumlah'] > 0) {
+            listItem.status = 'success';
+          } else {
+            listItem.status = 'failed';
+          }
+
+          responseList.push(listItem);
+        });
+      }
 
       conn.release();
-      resp.json({ hola: 'Holaaa hola hola holaaaaa' });
+      resp.json({ output: responseList });
     });
   });
 
