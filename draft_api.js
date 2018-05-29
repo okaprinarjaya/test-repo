@@ -1,4 +1,4 @@
-const cluster = require('cluster');
+/*const cluster = require('cluster');
 
 if (cluster.isMaster) {
   for (let i = 0; i < 2; i++) {
@@ -11,7 +11,7 @@ if (cluster.isMaster) {
 
   console.log(`Master ${process.pid} is running`);
 
-} else {
+} else {*/
   const path = require('path');
   const dotenv = require('dotenv');
   const express = require('express');
@@ -90,7 +90,75 @@ if (cluster.isMaster) {
                       resultsQry3[0]['kuota_kk'] > resultsQry1[0]['total'] &&
                       resultsQry5[0]['jumlah_kk'] > resultsQry2[0]['total']
                     ) {
-                      const strQryInsert = "INSERT INTO suara_masuk (" +
+
+                      for (let p = 0; p < kuisioner.length; p++) {
+                        const values = {
+                          sesi_dtdc_id: sesi_dtdc_id,
+                          questions_id: kuisioner[p]['kuisioner_id'],
+                          options_id: kuisioner[p]['pilihan_jawaban_id'],
+                          option_other: kuisioner[p]['pilihan_jawaban_lain'],
+                          relawan_id: relawan_id,
+                          kab_kota_id: resultsQry4[0]['kab_kota_id'],
+                          kecamatan_id: resultsQry4[0]['kecamatan_id'],
+                          kelurahan_id: kelurahan_id,
+                          kode_responden: responden_id,
+                          status: '1',
+                          ent_by: relawan_id,
+                          ent_dt: kuisioner[p]['created_dt'],
+                          deleted: 'false'
+                        };
+
+                        conn.query("INSERT INTO suara_masuk SET ?", values, (errInsert, resultsInsert) => {
+                          console.log('errInsert', errInsert);
+                        });
+                      }
+
+                      // Inquiry TMP Suara Masuk NEW
+                      const strQry6 = "SELECT COALESCE(SUM(total_suara),0) AS total FROM tmp_suara_masuk " +
+                        "WHERE relawan_id = ? " +
+                        "AND deleted = 'false'";
+
+                      conn.query(strQry6, [relawan_id], (err6, resultsQry6) => {
+                        if (resultsQry3[0]['kuota_kk'] === resultsQry6[0]['total']) {
+                          const strQryUpdt = "UPDATE relawan SET status = ? WHERE id = ?";
+                          conn.query(strQryUpdt, ['TIDAK AKTIF', relawan_id], _ => _);
+                        }
+
+                        // Populate responden_info
+                        if (kuisioner.length > 0) {
+                          const values = {
+                            kode_responden: responden_id,
+                            latitute: latitute,
+                            longitute: longitute,
+                            address: '-',
+                            ent_by: relawan_id,
+                            ent_dt: { toSqlString: () => 'CURRENT_TIMESTAMP()' }
+                          };
+
+                          conn.query("INSERT INTO responden_info SET ?", values, _ => _);
+                        }
+
+                        // Save image
+                        if (foto !== '') {
+                          const base64Data = foto.replace(/^data:image\/jpg;base64,/, "");
+                          const out = process.env.SAVE_PHOTO_PATH + kelurahan_id + '/';
+
+                          fs.stat(out, (errStat, stats) => {
+                            if (errStat && errStat.code === 'ENOENT') {
+                              console.log('Save image - check directory existence - errStat', errStat);
+                              fs.mkdir(out, errMkdir => {
+                                if (!errMkdir) {
+                                  fs.writeFile(out + responden_id + '.jpg', base64Data, 'base64', _ => _);
+                                }
+                              });
+
+                            } else {
+                              fs.writeFile(out + responden_id + '.jpg', base64Data, 'base64', _ => _);
+                            }
+                          });
+                        }
+                      });
+                      /*const strQryInsert = "INSERT INTO suara_masuk (" +
                         "sesi_dtdc_id, " +
                         "questions_id, " +
                         "options_id, " +
@@ -123,10 +191,10 @@ if (cluster.isMaster) {
                           kuisioner[p]['created_dt'],
                           'false'
                         ]);
-                      }
+                      }*/
 
                       // Do the questionaires insert!
-                      conn.query(strQryInsert, [records], (errInsert, resultsInsert) =>  {
+                      /*conn.query(strQryInsert, [records], (errInsert, resultsInsert) =>  {
 
                         // Inquiry TMP Suara Masuk NEW
                         const strQry6 = "SELECT COALESCE(SUM(total_suara),0) AS total FROM tmp_suara_masuk " +
@@ -154,7 +222,7 @@ if (cluster.isMaster) {
                           }
 
                           // Save image
-                          /*if (foto !== '') {
+                          if (foto !== '') {
                             const base64Data = foto.replace(/^data:image\/jpg;base64,/, "");
                             const out = process.env.SAVE_PHOTO_PATH + kelurahan_id + '/';
 
@@ -171,9 +239,9 @@ if (cluster.isMaster) {
                                 fs.writeFile(out + responden_id + '.jpg', base64Data, 'base64', _ => _);
                               }
                             });
-                          }*/
+                          }
                         });
-                      });
+                      });*/
 
                     } else {
                       // Update Status Relawan
@@ -199,5 +267,5 @@ if (cluster.isMaster) {
     console.log('Server listening on port', port);
   });
 
-  console.log(`Worker ${process.pid} started`);
-}
+  // console.log(`Worker ${process.pid} started`);
+// }
