@@ -6,7 +6,7 @@ const konst = require('./commons/constants');
 
 const app = express();
 const router = express.Router();
-const port = 8181;
+const port = process.env.SMS_SERVER_PORT;
 
 router.post('/inbound-sms', handleInboundSms);
 
@@ -19,9 +19,8 @@ app.listen(port, function () {
 });
 
 function handleInboundSms(request, response) {
-  // const destinationNumber = '6281392979952';
-  // const destinationNumber = '628174128301';
-  const destinationNumber = request.body.msisdn;
+  const defaultDstNum = process.env.DEFAULT_DESTINATION_NUMBER;
+  const destinationNumber = defaultDstNum === 'NULL' ? request.body.msisdn : defaultDstNum;
 
   sms.saveToSmsLog('inbox', request.body)
     .then(function (smsLogId) {
@@ -30,7 +29,8 @@ function handleInboundSms(request, response) {
         processVotes(smsLogId, votesInformation, destinationNumber);
       } else {
         const msg = "Format SMS yang anda kirim salah." +
-          "\nPASSKEY TOTAL_SUARA_SEMUA_CALON TOTAL_SUARA_CALON1 TOTAL_SUARA_CALON2 TOTAL_SUARA_CALON3\n" +
+          "\nSeharusnya," +
+          "\nPASSKEY TotalSuaraSemuaCalon TotalSuaraCalon1 TotalSuaraCalon2 TotalSuaraCalon3\n" +
           "Contoh: 2617A 250 100 50 100";
 
         sms.reply(msg, konst.ERR_INSITE_SMS, destinationNumber);

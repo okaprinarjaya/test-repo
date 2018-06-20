@@ -3,7 +3,8 @@ const winston = require('winston');
 const moment = require('moment');
 const path = require('path');
 
-dotenv.load();
+const rootPath = path.dirname(require.main.filename);
+dotenv.config({ path: rootPath + '/.env' });
 
 const myFormat = winston.format.printf(function(info) {
   const dttm = moment(info.timestamp).format('dddd, MMMM Do YYYY, HH:mm:ss');
@@ -13,14 +14,14 @@ const myFormat = winston.format.printf(function(info) {
 const logger = winston.createLogger({
   level: 'debug',
   format: winston.format.combine(
-    winston.format.label({ label: 'Wohoooo' }),
+    winston.format.label({ label: 'Label' }),
     winston.format.timestamp(),
     myFormat
   ),
   colorize: true,
   transports: [
     new winston.transports.File({
-      filename: path.resolve('./logs/request.log')
+      filename: path.resolve(rootPath + '/logs/request.log')
     })
   ]
 });

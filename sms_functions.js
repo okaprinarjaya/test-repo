@@ -5,8 +5,10 @@ const axios = require('axios');
 const Nexmo = require('nexmo');
 const SmsError = require('./commons/sms_error');
 const konst = require('./commons/constants');
+const logger = require('./commons/logger');
 
-dotenv.config({ path: path.dirname(require.main.filename) + '/.env' });
+const rootPath = path.dirname(require.main.filename);
+dotenv.config({ path: rootPath + '/.env' });
 
 const pool = mysql.createPool({
   connectionLimit: 10,
@@ -232,18 +234,24 @@ function reply(text, messageCode, destinationNumber) {
   const enableSms = process.env.ENABLE_SMS;
   if (enableSms === 'Y') {
     if (messageCode === konst.ERR_INSITE_SMS || messageCode === konst.OK_INSITE_SMS) {
-      nexmo.message.sendSms('INSITE', destinationNumber, text);
+      const sendSmsBy = process.env.SEND_SMS_BY;
+      logger.info('Send SMS using ' + sendSmsBy);
 
-      /*var smsServerStr = 'https://103.16.199.187/masking/send.php';
-      smsServerStr += '?username=insite&password=InSiTe@2017';
-      smsServerStr += '&hp=' + destinationNumber;
-      smsServerStr += '&message=' + text;
+      if (sendSmsBy === 'NEXMO') {
+        nexmo.message.sendSms('INSITE', destinationNumber, text);
 
-      axios
-        .get(smsServerStr)
-        .catch(function (error) {
-          console.error(error);
-        });*/
+      } else if (sendSmsBy === 'MASKING') {
+        let smsServerStr = 'https://' + process.env.SMS_MASKING_HOST + '/masking/send.php';
+        smsServerStr += '?username=' + process.env.SMS_MASKING_USERNAME + '&password=' + process.env.SMS_MASKING_PASSWD;
+        smsServerStr += '&hp=' + destinationNumber;
+        smsServerStr += '&message=' + text;
+
+        axios
+          .get(smsServerStr)
+          .catch(function (error) {
+            console.error(error);
+          });
+      }
     }
   }
 }
