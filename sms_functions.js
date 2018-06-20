@@ -29,7 +29,7 @@ function parseText(text) {
       return item.toUpperCase();
     });
 
-    var offset = 2;
+    let offset = 2;
     if (textParts.includes('SC')) {
       offset = 3;
     }
@@ -37,7 +37,7 @@ function parseText(text) {
     const totalVoteDetailList = [];
     const limitParts = textParts.length - offset;
 
-    for (var i = 0; i < limitParts; i++) {
+    for (let i = 0; i < limitParts; i++) {
       totalVoteDetailList.push(parseInt(textParts[offset + i]));
     }
 
@@ -103,8 +103,8 @@ function checkElectionTotalCandidates(electionId, totalCandidates) {
           reject(error);
 
         } else {
-          if (results.length > 0 && results[0].total_data > 0) {
-            if (totalCandidates !== results[0].total_data) {
+          if (results.length > 0 && results[0]['total_data'] > 0) {
+            if (totalCandidates !== results[0]['total_data']) {
               reject(new SmsError('Total jumlah kandidat salah.'));
             } else {
               resolve(true);
@@ -133,7 +133,7 @@ function checkCandidatesTotalVotesDetail(votesInformation) {
 }
 
 function saveVotes(smsLogId, votesInformation) {
-  var totalData = 0;
+  let totalData = 0;
   checkIsSuaraMasukExists(votesInformation)
     .then(function (total) {
       totalData = total;
@@ -200,7 +200,7 @@ function checkIsSuaraMasukExists(votesInformation) {
         if (error2) {
           reject(error2);
         } else {
-          resolve(results[0].total_data);
+          resolve(results[0]['total_data']);
         }
       });
     });
