@@ -241,7 +241,7 @@ function reply(text, messageCode, destinationNumber) {
         nexmo.message.sendSms('INSITE', destinationNumber, text);
 
       } else if (sendSmsBy === 'MASKING') {
-        let smsServerStr = 'https://' + process.env.SMS_MASKING_HOST + '/masking/send.php';
+        let smsServerStr = 'http://' + process.env.SMS_MASKING_HOST + '/masking/send.php';
         smsServerStr += '?username=' + process.env.SMS_MASKING_USERNAME + '&password=' + process.env.SMS_MASKING_PASSWD;
         smsServerStr += '&hp=' + destinationNumber;
         smsServerStr += '&message=' + text;
